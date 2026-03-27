@@ -367,6 +367,32 @@ defmodule Nosedrum.ApplicationCommand do
   @callback command(interaction :: Interaction.t()) :: response
 
   @doc """
+  Handle an autocomplete interaction for this command.
+
+  This callback is invoked when Discord sends an autocomplete interaction
+  (interaction type 4) for a command option with `autocomplete: true`.
+  It should return a response with `type: :application_command_autocomplete_result`
+  and a list of choices.
+
+  If not implemented, the dispatcher will fall back to `c:command/1`.
+
+  ## Example
+  ```elixir
+  @impl true
+  def autocomplete(interaction) do
+    focused = Enum.find(interaction.data.options, & &1.focused)
+    suggestions = MyApp.search(focused.value)
+
+    [
+      type: :application_command_autocomplete_result,
+      choices: Enum.map(suggestions, &%{name: &1, value: &1})
+    ]
+  end
+  ```
+  """
+  @callback autocomplete(interaction :: Interaction.t()) :: response
+
+  @doc """
   Make adjustments to the payload before creating the command with
   `Nostrum.Api.ApplicationCommand.create_global_command/2` or
   `Nostrum.Api.ApplicationCommand.create_guild_command/3`
@@ -375,6 +401,7 @@ defmodule Nosedrum.ApplicationCommand do
 
   @optional_callbacks [
     options: 0,
+    autocomplete: 1,
     default_member_permissions: 0,
     nsfw: 0,
     contexts: 0,

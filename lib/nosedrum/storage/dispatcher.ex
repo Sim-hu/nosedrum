@@ -56,7 +56,27 @@ defmodule Nosedrum.Storage.Dispatcher do
   end
 
   @impl true
-  def handle_interaction(%Interaction{} = interaction, id \\ __MODULE__) do
+  def handle_interaction(interaction, id \\ __MODULE__)
+
+  # Autocomplete interaction (type 4)
+  def handle_interaction(%Interaction{type: 4} = interaction, id) do
+    with {:ok, module} <- GenServer.call(id, {:fetch, interaction}) do
+      response =
+        if function_exported?(module, :autocomplete, 1) do
+          module.autocomplete(interaction)
+        else
+          module.command(interaction)
+        end
+
+      Storage.respond(interaction, response)
+    else
+      :error -> {:error, :unknown_command}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  # Application command and other interactions
+  def handle_interaction(%Interaction{} = interaction, id) do
     with {:ok, module} <- GenServer.call(id, {:fetch, interaction}),
          response <- module.command(interaction),
          :ok <- Storage.respond(interaction, response),
