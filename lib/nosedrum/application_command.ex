@@ -374,7 +374,9 @@ defmodule Nosedrum.ApplicationCommand do
   It should return a response with `type: :application_command_autocomplete_result`
   and a list of choices.
 
-  If not implemented, the dispatcher will fall back to `c:command/1`.
+  If not implemented, the dispatcher responds to Discord with an empty list of
+  choices and logs a warning. Implement this callback for any command that
+  marks options with `autocomplete: true`.
 
   ## Example
   ```elixir

@@ -61,14 +61,18 @@ defmodule Nosedrum.Storage.Dispatcher do
   # Autocomplete interaction (type 4)
   def handle_interaction(%Interaction{type: 4} = interaction, id) do
     with {:ok, module} <- GenServer.call(id, {:fetch, interaction}) do
-      response =
-        if function_exported?(module, :autocomplete, 1) do
-          module.autocomplete(interaction)
-        else
-          module.command(interaction)
-        end
+      if function_exported?(module, :autocomplete, 1) do
+        Storage.respond(interaction, module.autocomplete(interaction))
+      else
+        Logger.warning(
+          "Received autocomplete interaction for #{inspect(module)} but no autocomplete/1 callback is implemented. Responding with empty choices."
+        )
 
-      Storage.respond(interaction, response)
+        Storage.respond(interaction,
+          type: :application_command_autocomplete_result,
+          choices: []
+        )
+      end
     else
       :error -> {:error, :unknown_command}
       {:error, reason} -> {:error, reason}
